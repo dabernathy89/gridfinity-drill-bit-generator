@@ -50,9 +50,13 @@ import PreviewCanvas from "./components/PreviewCanvas.vue";
 .app-main {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(320px, 420px) 1fr;
+  grid-template-columns: minmax(340px, 440px) 1fr;
   padding: 1.5rem;
   flex: 1;
+  /* Allow grid children to shrink below their content size so long bit lists
+     don't push the layout wider than the viewport. */
+  min-width: 0;
+  min-height: 0;
 }
 
 .panel {
@@ -61,6 +65,8 @@ import PreviewCanvas from "./components/PreviewCanvas.vue";
   border-radius: 6px;
   padding: 1rem;
   min-height: 320px;
+  /* Same reason as .app-main — grid items default to min-content sizing. */
+  min-width: 0;
 }
 
 .panel-inputs {
@@ -82,6 +88,10 @@ import PreviewCanvas from "./components/PreviewCanvas.vue";
 @media (max-width: 900px) {
   .app-main {
     grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+  .app-header {
+    padding: 1rem;
   }
 }
 </style>

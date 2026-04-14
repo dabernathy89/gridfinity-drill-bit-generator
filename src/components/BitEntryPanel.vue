@@ -185,7 +185,12 @@ function onDragEnd(): void {
       <p v-if="addError" class="error-msg" role="alert">{{ addError }}</p>
     </form>
 
-    <ol v-if="bits.length > 0" class="bit-list" aria-label="Bits in this set">
+    <ol
+      v-if="bits.length > 0"
+      class="bit-list"
+      aria-label="Bits in this set"
+      data-testid="bit-list"
+    >
       <li
         v-for="(bit, idx) in bits"
         :key="bit.id"
@@ -277,7 +282,12 @@ function onDragEnd(): void {
         </template>
       </li>
     </ol>
-    <p v-else class="empty-hint">No bits yet. Add your first bit above, or load a preset.</p>
+    <div v-else class="empty-state" role="status" data-testid="bit-list-empty">
+      <p class="empty-title">No bits in this set yet</p>
+      <p class="empty-hint">
+        Add your first bit using the form above, or load one of the built-in presets.
+      </p>
+    </div>
   </div>
 </template>
 
@@ -404,6 +414,15 @@ function onDragEnd(): void {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  /* Cap the list at roughly eight rows so that a long bit set doesn't push
+     the footprint validation error below the fold in the inputs column.
+     The list scrolls internally; the surrounding panels (footprint, export)
+     stay anchored near the top of the viewport. */
+  max-height: 22rem;
+  overflow-y: auto;
+  /* Reserve space for the scrollbar so row borders don't jitter when the
+     list crosses the max-height threshold. */
+  padding-right: 0.25rem;
 }
 
 .bit-row {
@@ -460,9 +479,29 @@ function onDragEnd(): void {
   gap: 0.3rem;
 }
 
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  background: var(--panel-bg);
+  text-align: center;
+}
+
+.empty-title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 0.95rem;
+}
+
 .empty-hint {
+  margin: 0;
   color: var(--muted);
-  font-style: italic;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 @media (max-width: 600px) {
