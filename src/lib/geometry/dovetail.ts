@@ -66,3 +66,25 @@ export function buildTrayDovetailCrossSection(lengthMm: number, offsetMm: number
     [0, -hTip],
   ]);
 }
+
+/**
+ * Build the 2D female dovetail slot cross-section (the mate to
+ * `buildTrayDovetailCrossSection`). Same trapezoid shape and orientation —
+ * root at X = `lengthMm` (mouth, narrow), tip at X = 0 (interior, wide) —
+ * but the calibration `offsetMm` GROWS the slot rather than shrinking it.
+ *
+ * In practice only the male rail carries the `dovetailOffsetMm` calibration
+ * (see `TrayCalibration` / CLAUDE.md), so the default `offsetMm = 0` gives
+ * a nominal slot. The optional arg is kept for callers that want to loosen
+ * the fit further (e.g., a printer with chronic Z-squish).
+ */
+export function buildHingeDovetailSlotCrossSection(lengthMm: number, offsetMm = 0): Geom2 {
+  const hRoot = DOVETAIL_ROOT_HALF_MM + Math.max(0, offsetMm);
+  const hTip = dovetailTipHalfMm(lengthMm) + Math.max(0, offsetMm);
+  return geometries.geom2.fromPoints([
+    [lengthMm, -hRoot],
+    [lengthMm, hRoot],
+    [0, hTip],
+    [0, -hTip],
+  ]);
+}
