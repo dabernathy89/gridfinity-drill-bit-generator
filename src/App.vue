@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Top-level shell. Bit-entry UI and 3D preview land in later stories.
+import BitEntryPanel from "./components/BitEntryPanel.vue";
 </script>
 
 <template>
@@ -11,7 +11,7 @@
     <main class="app-main">
       <section class="panel panel-inputs" aria-label="Bit set inputs">
         <h2>Bit Set</h2>
-        <p class="placeholder">Bit entry form will live here.</p>
+        <BitEntryPanel />
       </section>
       <section class="panel panel-preview" aria-label="3D preview">
         <h2>Preview</h2>

@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { inchesFromMm, mmFromInches, normalizeDiameterMm, toDisplay } from "./units";
+import { inchesFromMm, mmFromInches, normalizeDiameterMm, parseDiameter, toDisplay } from "./units";
 
 test("mm↔inch round-trip is exact for common sizes", () => {
   expect(mmFromInches(1)).toBe(25.4);
@@ -16,6 +16,35 @@ test("toDisplay formats metric with units and trimmed zeros", () => {
   expect(toDisplay(5, "metric")).toBe("5 mm");
   expect(toDisplay(5.5, "metric")).toBe("5.5 mm");
   expect(toDisplay(3.175, "metric")).toBe("3.175 mm");
+});
+
+test("parseDiameter accepts decimals for metric", () => {
+  expect(parseDiameter("5.5", "metric")).toEqual({ ok: true, value: 5.5 });
+  expect(parseDiameter("  12 ", "metric")).toEqual({ ok: true, value: 12 });
+});
+
+test("parseDiameter rejects non-numeric and non-positive metric input", () => {
+  const bad = parseDiameter("abc", "metric");
+  expect(bad.ok).toBe(false);
+  const zero = parseDiameter("0", "metric");
+  expect(zero.ok).toBe(false);
+  const neg = parseDiameter("-1", "metric");
+  expect(neg.ok).toBe(false);
+});
+
+test("parseDiameter accepts fractions and mixed numbers for imperial", () => {
+  expect(parseDiameter("1/4", "imperial")).toEqual({ ok: true, value: 0.25 });
+  expect(parseDiameter("3/8", "imperial")).toEqual({ ok: true, value: 0.375 });
+  expect(parseDiameter("1 1/2", "imperial")).toEqual({ ok: true, value: 1.5 });
+  expect(parseDiameter("0.25", "imperial")).toEqual({ ok: true, value: 0.25 });
+  // Trailing inch mark tolerated.
+  expect(parseDiameter('1/4"', "imperial")).toEqual({ ok: true, value: 0.25 });
+});
+
+test("parseDiameter rejects imperial garbage and zero denominators", () => {
+  expect(parseDiameter("1/0", "imperial").ok).toBe(false);
+  expect(parseDiameter("1/4/8", "imperial").ok).toBe(false);
+  expect(parseDiameter("", "imperial").ok).toBe(false);
 });
 
 test("toDisplay snaps metric diameters to the nearest inch fraction", () => {
