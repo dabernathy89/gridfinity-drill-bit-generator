@@ -1,0 +1,81 @@
+/**
+ * Unit conversion helpers for drill-bit diameters.
+ *
+ * Bit diameters are stored canonically in millimeters regardless of the user's
+ * preferred display unit. These pure helpers handle conversion on entry and
+ * formatting on display.
+ */
+
+export type BitUnit = "metric" | "imperial";
+
+export const MM_PER_INCH = 25.4;
+
+export function mmFromInches(inches: number): number {
+  return inches * MM_PER_INCH;
+}
+
+export function inchesFromMm(mm: number): number {
+  return mm / MM_PER_INCH;
+}
+
+/**
+ * Normalize a user-entered diameter to millimeters. Imperial values are
+ * assumed to be inches; metric values are already in millimeters.
+ */
+export function normalizeDiameterMm(value: number, unit: BitUnit): number {
+  return unit === "imperial" ? mmFromInches(value) : value;
+}
+
+function gcd(a: number, b: number): number {
+  let x = Math.abs(a);
+  let y = Math.abs(b);
+  while (y !== 0) {
+    const t = y;
+    y = x % y;
+    x = t;
+  }
+  return x;
+}
+
+function formatMetric(diameterMm: number): string {
+  // Round to 3 decimals, strip trailing zeros, keep a plain integer where possible.
+  const rounded = Math.round(diameterMm * 1000) / 1000;
+  const str = rounded.toFixed(3).replace(/\.?0+$/, "");
+  return `${str} mm`;
+}
+
+/**
+ * Render a millimeter diameter as the nearest inch fraction with the given
+ * power-of-two denominator (default 64ths — finer than any common drill index).
+ */
+function formatImperialFraction(diameterMm: number, denominator = 64): string {
+  const inches = inchesFromMm(diameterMm);
+  const whole = Math.floor(inches);
+  const frac = inches - whole;
+  let num = Math.round(frac * denominator);
+  let den = denominator;
+
+  if (num === den) {
+    return `${whole + 1}"`;
+  }
+  if (num === 0) {
+    return `${whole}"`;
+  }
+
+  const g = gcd(num, den);
+  num = num / g;
+  den = den / g;
+
+  if (whole > 0) {
+    return `${whole} ${num}/${den}"`;
+  }
+  return `${num}/${den}"`;
+}
+
+/**
+ * Pure formatter for displaying a stored (millimeter) diameter in either a
+ * metric ("5.5 mm") or imperial-fraction ("1/4\"") representation.
+ */
+export function toDisplay(diameterMm: number, unit: BitUnit): string {
+  return unit === "imperial" ? formatImperialFraction(diameterMm) : formatMetric(diameterMm);
+}
