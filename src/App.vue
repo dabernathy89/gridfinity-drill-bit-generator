@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BitEntryPanel from "./components/BitEntryPanel.vue";
+import FootprintCalibrationPanel from "./components/FootprintCalibrationPanel.vue";
 </script>
 
 <template>
@@ -12,6 +13,7 @@ import BitEntryPanel from "./components/BitEntryPanel.vue";
       <section class="panel panel-inputs" aria-label="Bit set inputs">
         <h2>Bit Set</h2>
         <BitEntryPanel />
+        <FootprintCalibrationPanel />
       </section>
       <section class="panel panel-preview" aria-label="3D preview">
         <h2>Preview</h2>
@@ -57,6 +59,12 @@ import BitEntryPanel from "./components/BitEntryPanel.vue";
   border-radius: 6px;
   padding: 1rem;
   min-height: 320px;
+}
+
+.panel-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .panel h2 {
