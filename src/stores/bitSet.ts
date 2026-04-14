@@ -95,6 +95,10 @@ export const useBitSetStore = defineStore("bitSet", () => {
     bits.splice(toIdx, 0, moved);
   }
 
+  function clearBits(): void {
+    bits.splice(0, bits.length);
+  }
+
   function resetCalibration(): void {
     Object.assign(calibration, DEFAULT_CALIBRATION);
   }
@@ -108,6 +112,7 @@ export const useBitSetStore = defineStore("bitSet", () => {
     updateBit,
     removeBit,
     reorderBits,
+    clearBits,
     resetCalibration,
   };
 });

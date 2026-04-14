@@ -3,6 +3,7 @@ import { computed, reactive, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useBitSetStore } from "../stores/bitSet";
 import { parseDiameter, toDisplay, type BitUnit } from "../lib/units";
+import PresetPicker from "./PresetPicker.vue";
 
 const store = useBitSetStore();
 const { setName, bits } = storeToRefs(store);
@@ -140,6 +141,8 @@ function onDragEnd(): void {
       />
     </label>
 
+    <PresetPicker />
+
     <form class="add-row" @submit.prevent="submitAdd">
       <div class="field diameter-field">
         <span class="field-label">Diameter</span>
@@ -271,9 +274,7 @@ function onDragEnd(): void {
         </template>
       </li>
     </ol>
-    <p v-else class="empty-hint">
-      No bits yet. Add your first bit above, or load a preset in a later step.
-    </p>
+    <p v-else class="empty-hint">No bits yet. Add your first bit above, or load a preset.</p>
   </div>
 </template>
 
