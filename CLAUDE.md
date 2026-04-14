@@ -50,22 +50,7 @@ Validate that the bit row fits within the selected U-width before allowing gener
 
 ## Commands
 
-All tooling runs through the `vp` CLI ([Vite+](https://viteplus.dev/guide/)). Use `pnpm` as the package manager (pinned via `packageManager` in `package.json`).
-
-| Task                            | Command                                      |
-| ------------------------------- | -------------------------------------------- |
-| Install deps                    | `pnpm install`                               |
-| Dev server                      | `vp dev`                                     |
-| Production build                | `pnpm build` (runs `vue-tsc -b && vp build`) |
-| Preview build                   | `vp preview`                                 |
-| Typecheck + lint + format check | `vp check`                                   |
-| Autofix lint + format           | `vp check --fix`                             |
-| Lint only                       | `vp lint`                                    |
-| Format (check)                  | `vp fmt --check`                             |
-| Format (write)                  | `vp fmt`                                     |
-| Tests                           | `vp test`                                    |
-
-Before pushing a story, `vp check` and `vp build` must both pass.
+All tooling runs through the `vp` CLI ([Vite+](https://viteplus.dev/guide/)); `pnpm` is the package manager (pinned via `packageManager` in `package.json`). See `package.json` for the current script list. `vp check` and `vp build` must both pass before pushing a story.
 
 ### Vite+ gotchas
 
