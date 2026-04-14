@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import BitEntryPanel from "./components/BitEntryPanel.vue";
 import FootprintCalibrationPanel from "./components/FootprintCalibrationPanel.vue";
+import ExportActions from "./components/ExportActions.vue";
 </script>
 
 <template>
@@ -14,6 +15,7 @@ import FootprintCalibrationPanel from "./components/FootprintCalibrationPanel.vu
         <h2>Bit Set</h2>
         <BitEntryPanel />
         <FootprintCalibrationPanel />
+        <ExportActions />
       </section>
       <section class="panel panel-preview" aria-label="3D preview">
         <h2>Preview</h2>
