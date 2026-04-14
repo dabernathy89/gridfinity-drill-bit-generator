@@ -34,14 +34,14 @@ Tolerances must be user-overridable at generation time (filament/printer calibra
 - **Frontend:** Vue 3 Composition API + TypeScript
 - **State:** Pinia (bit arrays, unit conversions metric↔imperial)
 - **3D / CSG:** `@jscad/modeling` — browser-side, for both live preview and STL export
-- **Serverless:** Cloudflare Workers
-- **Persistence:** Cloudflare Durable Objects (per-user saved toolsets)
+
+Entirely client-side. No backend, no accounts, no server persistence. Users export/import their bit sets as CSV.
 
 The same JSCAD model should drive both the real-time preview and the downloaded STL — don't fork the geometry between a "preview" and "export" pipeline.
 
 ## User inputs
 
-- Set name (string)
+- Set name (string, used for STL filename)
 - Bit array: list of `{ diameter, unit: metric|imperial, label }`
 - Tray footprint on baseplate: width in Gridfinity U, height in 7mm units
 - Calibration offsets for dovetail and hinge tolerances
