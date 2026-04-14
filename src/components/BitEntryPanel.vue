@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useBitSetStore } from "../stores/bitSet";
 import { parseDiameter, toDisplay, type BitUnit } from "../lib/units";
 import PresetPicker from "./PresetPicker.vue";
+import CsvImportExport from "./CsvImportExport.vue";
 
 const store = useBitSetStore();
 const { setName, bits } = storeToRefs(store);
@@ -142,6 +143,8 @@ function onDragEnd(): void {
     </label>
 
     <PresetPicker />
+
+    <CsvImportExport />
 
     <form class="add-row" @submit.prevent="submitAdd">
       <div class="field diameter-field">
