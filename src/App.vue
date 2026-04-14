@@ -2,6 +2,7 @@
 import BitEntryPanel from "./components/BitEntryPanel.vue";
 import FootprintCalibrationPanel from "./components/FootprintCalibrationPanel.vue";
 import ExportActions from "./components/ExportActions.vue";
+import PreviewCanvas from "./components/PreviewCanvas.vue";
 </script>
 
 <template>
@@ -17,9 +18,8 @@ import ExportActions from "./components/ExportActions.vue";
         <FootprintCalibrationPanel />
         <ExportActions />
       </section>
-      <section class="panel panel-preview" aria-label="3D preview">
-        <h2>Preview</h2>
-        <p class="placeholder">Live 3D preview will render here.</p>
+      <section class="panel panel-preview">
+        <PreviewCanvas />
       </section>
     </main>
   </div>
