@@ -2,9 +2,12 @@
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useBitSetStore, DEFAULT_CALIBRATION } from "../stores/bitSet";
+import { validateFit } from "../lib/validation";
 
 const store = useBitSetStore();
-const { footprint, calibration } = storeToRefs(store);
+const { bits, footprint, calibration } = storeToRefs(store);
+
+const fitValidation = computed(() => validateFit(bits.value, footprint.value, calibration.value));
 
 const MIN_WIDTH_U = 1;
 const MAX_WIDTH_U = 6;
@@ -93,6 +96,20 @@ const isCalibrationDirty = computed(
         <span class="derived">= {{ heightMm }} mm</span>
       </label>
     </div>
+
+    <p
+      v-if="!fitValidation.ok"
+      class="fit-error"
+      role="alert"
+      aria-live="polite"
+      data-testid="fit-error"
+    >
+      <strong>Width too narrow.</strong>
+      {{ fitValidation.reason }}
+      Increase width to at least
+      <strong>{{ fitValidation.minWidthU }} U</strong>
+      or remove bits.
+    </p>
 
     <details class="calibration">
       <summary class="calibration-summary">
@@ -234,6 +251,21 @@ const isCalibrationDirty = computed(
   font-size: 0.75rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+.fit-error {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #d14343;
+  border-radius: 4px;
+  background: rgba(209, 67, 67, 0.08);
+  color: #d14343;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.fit-error strong {
+  color: inherit;
 }
 
 .input {
