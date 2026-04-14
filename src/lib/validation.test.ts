@@ -107,3 +107,19 @@ test("a drill-hole tolerance increase can tip a borderline list into overflow", 
 test("GRIDFINITY_U_MM equals the 42 mm Gridfinity spec", () => {
   expect(GRIDFINITY_U_MM).toBe(42);
 });
+
+test("validateFit accepts a long row that still fits at the max 6U footprint", () => {
+  // 40 × 6mm bits → 20 columns × (6 + 0.4 + 2) = 168 + 2 + 4 = 174 mm ≤ 6U (252 mm).
+  const many = bits(...Array.from({ length: 40 }, () => 6));
+  const result = validateFit(many, { widthU: 6 }, { drillHoleToleranceMm: defaultTol });
+  expect(result).toEqual({ ok: true });
+});
+
+test("validateFit rejects a row that overflows even at the max 6U footprint", () => {
+  // 60 × 10mm bits → 30 cols × (10 + 0.4 + 2) = 372 + 6 = 378 mm > 6U (252 mm).
+  const tooMany = bits(...Array.from({ length: 60 }, () => 10));
+  const result = validateFit(tooMany, { widthU: 6 }, { drillHoleToleranceMm: defaultTol });
+  if (result.ok) throw new Error("expected overflow at 6U");
+  expect(result.minWidthU).toBeGreaterThan(6);
+  expect(result.reason).toMatch(/6 U/);
+});
