@@ -66,3 +66,8 @@ All tooling runs through the `vp` CLI ([Vite+](https://viteplus.dev/guide/)). Us
 | Tests                           | `vp test`                                    |
 
 Before pushing a story, `vp check` and `vp build` must both pass.
+
+### Vite+ gotchas
+
+- Import from `vite-plus`, not `vite` or `vitest` (e.g., `import { defineConfig } from "vite-plus"`, `import { expect, test } from "vite-plus/test"`). Don't add `vitest`, `oxlint`, `oxfmt`, or `tsdown` as direct deps — Vite+ wraps them.
+- Built-in names (`vp dev`, `vp build`, `vp test`) always run the Vite+ tool, not a same-named `package.json` script. Use `vp run <script>` to invoke a custom script.
