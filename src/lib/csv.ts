@@ -12,7 +12,12 @@
  * An optional header row (`diameter,unit,label`, case-insensitive) is detected
  * and skipped. Parsing continues past malformed rows so the caller can surface
  * per-row errors without losing the valid entries.
+ *
+ * Lexing (quote handling, CRLF/LF/CR, doubled-quote escapes) is delegated to
+ * Papa Parse; everything in this module is the bit-set-specific validation
+ * and serialization layer on top.
  */
+import Papa from "papaparse";
 import type { Bit } from "../stores/bitSet";
 import { inchesFromMm, parseDiameter, type BitUnit, type ParseResult } from "./units";
 
@@ -32,109 +37,6 @@ export interface CsvParseError {
 export interface CsvParseResult {
   rows: CsvBitRow[];
   errors: CsvParseError[];
-}
-
-// --- Field tokenizer -------------------------------------------------------
-
-/**
- * Split a CSV document into records of fields. Handles:
- *   - CRLF / LF / CR line endings
- *   - Quoted fields with embedded commas and newlines
- *   - Doubled quotes ("") as an escaped `"` inside a quoted field
- *
- * Returns an array of records; each record is an array of raw field strings
- * alongside the 1-based line number where the record started. Physical
- * records that span multiple source lines (quoted newlines) carry the
- * starting line.
- */
-interface RawRecord {
-  fields: string[];
-  line: number;
-}
-
-function tokenize(text: string): RawRecord[] {
-  const records: RawRecord[] = [];
-  let fields: string[] = [];
-  let field = "";
-  let inQuotes = false;
-  let fieldStart = true; // true when no chars have been accumulated in the current field yet
-  let recordStartLine = 1;
-  let currentLine = 1;
-
-  const endField = () => {
-    fields.push(field);
-    field = "";
-    fieldStart = true;
-  };
-  const endRecord = () => {
-    fields.push(field);
-    // A record with exactly one empty field is a blank line — drop it to
-    // avoid synthesizing spurious empty rows for blank input or trailing
-    // newlines.
-    if (!(fields.length === 1 && fields[0] === "")) {
-      records.push({ fields, line: recordStartLine });
-    }
-    fields = [];
-    field = "";
-    fieldStart = true;
-    recordStartLine = currentLine + 1;
-  };
-
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          field += '"';
-          i += 1;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        field += ch;
-        if (ch === "\n") currentLine += 1;
-      }
-      continue;
-    }
-
-    if (ch === '"' && fieldStart) {
-      inQuotes = true;
-      fieldStart = false;
-      continue;
-    }
-    if (ch === ",") {
-      endField();
-      continue;
-    }
-    if (ch === "\r") {
-      if (text[i + 1] === "\n") {
-        endRecord();
-        currentLine += 1;
-        i += 1;
-        continue;
-      }
-      endRecord();
-      currentLine += 1;
-      continue;
-    }
-    if (ch === "\n") {
-      endRecord();
-      currentLine += 1;
-      continue;
-    }
-    field += ch;
-    fieldStart = false;
-  }
-
-  // Flush the final record if the document didn't end with a newline.
-  if (field.length > 0 || fields.length > 0) {
-    fields.push(field);
-    if (!(fields.length === 1 && fields[0] === "")) {
-      records.push({ fields, line: recordStartLine });
-    }
-  }
-
-  return records;
 }
 
 // --- Row validation --------------------------------------------------------
@@ -162,54 +64,82 @@ function parseUnit(raw: string): BitUnit | null {
  * the valid rows, surface errors, or both.
  */
 export function parseBitCsv(text: string): CsvParseResult {
-  const records = tokenize(text);
+  // `header: false` keeps row indexes aligned with source lines so we can
+  // surface accurate line numbers in errors. We deliberately DON'T pass
+  // `skipEmptyLines` — Papa would compact `data`, breaking the index→line
+  // mapping. Instead we filter blank rows in the loop below.
+  const parsed = Papa.parse<string[]>(text, {
+    header: false,
+    delimiter: ",",
+  });
+
   const rows: CsvBitRow[] = [];
   const errors: CsvParseError[] = [];
 
-  let sawHeader = false;
-  for (const record of records) {
-    // Skip fully-empty records (produced by blank lines).
-    const allEmpty = record.fields.every((f) => f.trim() === "");
-    if (allEmpty) continue;
+  // Papa-level parsing errors (e.g. unclosed quotes) carry a 0-based `row`
+  // index into `data` — but for malformed quoting it may also report a row
+  // beyond `data.length`. Surface those as line-numbered errors using the
+  // best info Papa gives us.
+  for (const err of parsed.errors) {
+    const sourceRow = typeof err.row === "number" ? err.row : 0;
+    errors.push({
+      line: sourceRow + 1,
+      message: err.message,
+    });
+  }
 
-    if (!sawHeader && isHeader(record.fields)) {
+  let sawHeader = false;
+  for (let i = 0; i < parsed.data.length; i += 1) {
+    const fields = parsed.data[i] ?? [];
+    const lineNumber = i + 1;
+
+    // Skip blank lines (Papa returns `[""]` for them) — they shouldn't
+    // generate an error.
+    if (fields.length === 0 || (fields.length === 1 && fields[0]?.trim() === "")) {
+      continue;
+    }
+
+    if (!sawHeader && isHeader(fields)) {
       sawHeader = true;
       continue;
     }
     sawHeader = true;
 
-    if (record.fields.length < 2) {
+    // Papa returns single-cell arrays for unquoted lines without commas; we
+    // require at least diameter + unit.
+    const nonEmptyCount = fields.filter((f) => f.trim() !== "").length;
+    if (fields.length < 2 || nonEmptyCount < 2) {
       errors.push({
-        line: record.line,
+        line: lineNumber,
         message: "Expected at least two columns: diameter,unit[,label].",
       });
       continue;
     }
 
-    const rawDiameter = record.fields[0]?.trim() ?? "";
-    const rawUnit = record.fields[1] ?? "";
-    const rawLabel = record.fields[2] ?? "";
+    const rawDiameter = fields[0]?.trim() ?? "";
+    const rawUnit = fields[1] ?? "";
+    const rawLabel = fields[2] ?? "";
 
     const unit = parseUnit(rawUnit);
     if (unit === null) {
       errors.push({
-        line: record.line,
+        line: lineNumber,
         message: `Unknown unit "${rawUnit.trim()}"; expected "metric" or "imperial".`,
       });
       continue;
     }
 
-    const parsed: ParseResult = parseDiameter(rawDiameter, unit);
-    if (!parsed.ok) {
+    const parsedDiameter: ParseResult = parseDiameter(rawDiameter, unit);
+    if (!parsedDiameter.ok) {
       errors.push({
-        line: record.line,
-        message: `Invalid diameter "${rawDiameter}": ${parsed.error}`,
+        line: lineNumber,
+        message: `Invalid diameter "${rawDiameter}": ${parsedDiameter.error}`,
       });
       continue;
     }
 
     rows.push({
-      diameter: parsed.value,
+      diameter: parsedDiameter.value,
       unit,
       label: rawLabel.trim(),
     });
@@ -219,18 +149,6 @@ export function parseBitCsv(text: string): CsvParseResult {
 }
 
 // --- Export ----------------------------------------------------------------
-
-/**
- * Escape a field for CSV output. Quotes the field whenever it contains a
- * comma, a quote, a CR, or a LF, and doubles any internal quotes.
- */
-function escapeField(value: string): string {
-  if (value === "") return "";
-  if (/[",\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
 
 /**
  * Render a diameter for CSV export. Metric bits are written as canonical
@@ -246,16 +164,19 @@ function formatDiameterForExport(bit: Pick<Bit, "diameterMm" | "unit">): string 
 
 /**
  * Serialize a bit list as a CSV document with a header row. Labels are quoted
- * as needed; an empty label emits an empty third field.
+ * by Papa Parse as needed; an empty label emits an empty third field.
  */
 export function formatBitsCsv(bits: readonly Pick<Bit, "diameterMm" | "unit" | "label">[]): string {
-  const lines = ["diameter,unit,label"];
-  for (const bit of bits) {
-    const diameter = formatDiameterForExport(bit);
-    const unit = bit.unit;
-    const label = escapeField(bit.label);
-    lines.push(`${diameter},${unit},${label}`);
-  }
-  // Trailing newline keeps the file POSIX-friendly and is ignored by the parser.
-  return `${lines.join("\n")}\n`;
+  const data = bits.map((bit) => ({
+    diameter: formatDiameterForExport(bit),
+    unit: bit.unit,
+    label: bit.label,
+  }));
+  const csv = Papa.unparse(data, {
+    columns: ["diameter", "unit", "label"],
+    newline: "\n",
+  });
+  // Papa omits the trailing newline; add one for POSIX-friendliness. The
+  // parser ignores it.
+  return `${csv}\n`;
 }
