@@ -73,7 +73,7 @@ function loadPreset(mode: "replace" | "append"): void {
 
 .preset-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.75rem;
   align-items: end;
 }

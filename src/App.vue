@@ -75,6 +75,13 @@ import PreviewCanvas from "./components/PreviewCanvas.vue";
   gap: 1rem;
 }
 
+.panel-preview {
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+  max-height: calc(100svh - 3rem);
+}
+
 .panel h2 {
   margin: 0 0 0.75rem;
   font-size: 1.1rem;
